@@ -1,0 +1,165 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_DIRECT")
+}
+
+// ─── Outlet ───────────────────────────────────────────────────────────────────
+// Each physical restaurant location. Designed for multi-franchise / multi-branch.
+
+model Outlet {
+  id           String        @id @default(cuid())
+  name         String
+  slug         String        @unique
+  city         String?
+  address      String?
+  phone        String?
+  email        String?
+  timezone     String        @default("Asia/Riyadh")
+  currency     String        @default("SAR")
+  apiKey       String        @unique @default(uuid())
+  isActive     Boolean       @default(true)
+  tables       Table[]
+  menuItems    MenuItem[]
+  orders       Order[]
+  reservations Reservation[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+// ─── Tables ───────────────────────────────────────────────────────────────────
+
+model Table {
+  id           String        @id @default(cuid())
+  outletId     String
+  outlet       Outlet        @relation(fields: [outletId], references: [id])
+  number       Int
+  uuid         String        @unique @default(uuid())
+  capacity     Int
+  status       TableStatus   @default(AVAILABLE)
+  orders       Order[]
+  reservations Reservation[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@unique([outletId, number])
+}
+
+enum TableStatus {
+  AVAILABLE
+  OCCUPIED
+  RESERVED
+}
+
+// ─── Menu ─────────────────────────────────────────────────────────────────────
+
+model MenuItem {
+  id          String       @id @default(cuid())
+  outletId    String
+  outlet      Outlet       @relation(fields: [outletId], references: [id])
+  nameEn      String
+  nameAr      String
+  description String
+  price       Float
+  category    MenuCategory
+  available   Boolean      @default(true)
+  special     Boolean      @default(false)
+  imageUrl    String?
+  orderItems  OrderItem[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+enum MenuCategory {
+  PIZZA
+  PASTA
+  SOUPS
+  SALADS
+  DESSERTS
+  BEVERAGES
+}
+
+// ─── Orders ───────────────────────────────────────────────────────────────────
+
+model Order {
+  id         String      @id @default(cuid())
+  outletId   String
+  outlet     Outlet      @relation(fields: [outletId], references: [id])
+  orderNum   String      @unique
+  tableId    String?
+  table      Table?      @relation(fields: [tableId], references: [id])
+  guestName  String?
+  guestPhone String?
+  status     OrderStatus @default(RECEIVED)
+  type       OrderType   @default(DINE_IN)
+  items      OrderItem[]
+  total      Float
+  notes      String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId String
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+  quantity   Int
+  unitPrice  Float
+  notes      String?
+}
+
+enum OrderStatus {
+  RECEIVED
+  PREPARING
+  READY
+  SERVED
+  CANCELLED
+}
+
+enum OrderType {
+  DINE_IN
+  DELIVERY
+  TAKEAWAY
+}
+
+// ─── Reservations ─────────────────────────────────────────────────────────────
+
+model Reservation {
+  id        String            @id @default(cuid())
+  outletId  String
+  outlet    Outlet            @relation(fields: [outletId], references: [id])
+  refNum    String            @unique
+  name      String
+  nameAr    String?
+  phone     String
+  email     String?
+  date      DateTime
+  time      String
+  party     Int
+  type      ReservationType   @default(TABLE)
+  status    ReservationStatus @default(PENDING)
+  notes     String?
+  tableId   String?
+  table     Table?            @relation(fields: [tableId], references: [id])
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+}
+
+enum ReservationType {
+  TABLE
+  CATERING
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  NO_SHOW
+}
