@@ -72,7 +72,7 @@ tables.patch(
       where: { id: c.req.param('id') },
       data:  { status: c.req.valid('json').status },
     })
-    emit.tableUpdated(table)
+    await emit.tableUpdated(table)
     return c.json(table)
   },
 )

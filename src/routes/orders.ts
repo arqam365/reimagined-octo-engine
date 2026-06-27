@@ -77,7 +77,7 @@ orders.post('/', zValidator('json', createOrderSchema), async (c) => {
     include: { items: { include: { menuItem: true } }, table: true },
   })
 
-  emit.newOrder(order)
+  await emit.newOrder(order)
   return c.json(order, 201)
 })
 
@@ -127,7 +127,7 @@ orders.patch(
       data:    { status: c.req.valid('json').status },
       include: { items: { include: { menuItem: true } }, table: true },
     })
-    emit.orderUpdated(order)
+    await emit.orderUpdated(order)
     return c.json(order)
   },
 )

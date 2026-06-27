@@ -47,7 +47,7 @@ reservations.post('/', zValidator('json', createSchema), async (c) => {
     data: { ...bodyData, outletId, refNum, date: new Date(body.date) },
     include: { table: true },
   })
-  emit.reservationNew(res)
+  await emit.reservationNew(res)
   return c.json(res, 201)
 })
 
