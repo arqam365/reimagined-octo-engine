@@ -11,10 +11,17 @@ import { outlets } from './routes/outlets.js'
 export const app = new Hono()
 
 app.use('*', logger())
+const allowedOrigins = (
+  process.env.FRONTEND_URL ?? 'http://localhost:3000,http://localhost:3001'
+).split(',').map(s => s.trim()).filter(Boolean)
+
 app.use(
   '*',
   cors({
-    origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
+    origin: (origin) => {
+      if (!origin) return allowedOrigins[0]
+      return allowedOrigins.includes(origin) ? origin : allowedOrigins[0]
+    },
     allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'x-platform-secret'],
     credentials: true,
