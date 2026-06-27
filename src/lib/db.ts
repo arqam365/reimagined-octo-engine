@@ -1,13 +1,13 @@
-import { PrismaNeonHTTP } from '@prisma/adapter-neon'
+import { neonConfig } from '@neondatabase/serverless'
+import { PrismaNeon } from '@prisma/adapter-neon'
 import { PrismaClient } from '@prisma/client'
+import ws from 'ws'
 
-// HTTP-based Neon adapter: no TCP connection, no cold-start wait,
-// no channel_binding issues. Each query is a regular HTTPS call to Neon.
-const connectionString = (
-  process.env.DATABASE_URL_DIRECT ??
-  process.env.DATABASE_URL ??
-  ''
-)
+// WebSocket constructor needed for Node.js/Vercel runtime
+neonConfig.webSocketConstructor = ws
 
-const adapter = new PrismaNeonHTTP(connectionString, {})
+const adapter = new PrismaNeon({
+  connectionString: process.env.DATABASE_URL_DIRECT ?? process.env.DATABASE_URL ?? '',
+})
+
 export const db = new PrismaClient({ adapter })
