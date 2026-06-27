@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { db } from '../lib/db.js'
-import { emit } from '../lib/socket.js'
+import { emit } from '../lib/pubsub.js'
 import { requireAuth } from '../middleware/auth.js'
 import type { AppEnv } from '../types/env.js'
 
@@ -81,6 +81,16 @@ orders.post('/', zValidator('json', createOrderSchema), async (c) => {
   return c.json(order, 201)
 })
 
+// GET /orders/:id — public so customers can track their order by ID
+orders.get('/:id', async (c) => {
+  const order = await db.order.findUnique({
+    where:   { id: c.req.param('id') },
+    include: { items: { include: { menuItem: true } }, table: true },
+  })
+  if (!order) return c.json({ error: 'Not found' }, 404)
+  return c.json(order)
+})
+
 // ── Admin (auth required) ─────────────────────────────────────────────────────
 
 orders.use('/*', requireAuth)
@@ -99,17 +109,6 @@ orders.get('/', async (c) => {
     orderBy: { createdAt: 'desc' },
   })
   return c.json(rows)
-})
-
-// GET /orders/:id
-orders.get('/:id', async (c) => {
-  const outlet = c.get('outlet')
-  const order = await db.order.findUnique({
-    where:   { id: c.req.param('id') },
-    include: { items: { include: { menuItem: true } }, table: true },
-  })
-  if (!order || order.outletId !== outlet.id) return c.json({ error: 'Not found' }, 404)
-  return c.json(order)
 })
 
 // PATCH /orders/:id/status

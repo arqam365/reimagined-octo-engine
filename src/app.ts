@@ -7,6 +7,7 @@ import { orders } from './routes/orders.js'
 import { reservations } from './routes/reservations.js'
 import { tables } from './routes/tables.js'
 import { outlets } from './routes/outlets.js'
+import { getEventsSince } from './lib/pubsub.js'
 
 export const app = new Hono()
 
@@ -31,6 +32,13 @@ app.use(
 // ── Health ────────────────────────────────────────────────────────────────────
 
 app.get('/health', (c) => c.json({ ok: true, service: 'mazencito-api', version: '1.0.0' }))
+
+// GET /events?since=<timestamp> — poll for real-time updates
+app.get('/events', async (c) => {
+  const since = Number(c.req.query('since') ?? '0')
+  const events = await getEventsSince(since)
+  return c.json(events)
+})
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 
